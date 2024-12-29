@@ -13,27 +13,28 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Link, useRouter } from 'expo-router';
 
-const SignupScreen = () => {
+const LoginScreen = () => {
   const router = useRouter();
-  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSignup = async () => {
-    if (password !== confirmPassword) {
-      alert('Passwords do not match');
-      return;
-    }
-
+  const handleLogin = async () => {
     setIsLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500)); // Simulated delay
-      router.replace('/(tabs)'); // Navigate to the app screen
+      const testEmail = 'test';
+      const testPassword = 'test';
+
+      if (email === testEmail && password === testPassword) {
+        await new Promise((resolve) => setTimeout(resolve, 1500)); // Simulated delay
+        router.replace('/(tabs)/dashboard'); // Navigate to the app screen
+      } else {
+        alert('Invalid email or password. Please try again.');
+      }
     } catch (error) {
-      alert('Signup failed. Please try again.');
+      console.error('Login error:', error);
+      alert('Login failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -47,22 +48,11 @@ const SignupScreen = () => {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
           <MaterialCommunityIcons name="timer-outline" size={60} color="#3B82F6" />
-          <Text style={styles.title}>Create Account</Text>
-          <Text style={styles.subtitle}>Join the fasting community</Text>
+          <Text style={styles.title}>FastTracker</Text>
+          <Text style={styles.subtitle}>Track your fasting journey</Text>
         </View>
 
         <View style={styles.form}>
-          <View style={styles.inputContainer}>
-            <MaterialCommunityIcons name="account-outline" size={24} color="#9CA3AF" />
-            <TextInput
-              style={styles.input}
-              placeholder="Full Name"
-              placeholderTextColor="#9CA3AF"
-              value={name}
-              onChangeText={setName}
-            />
-          </View>
-
           <View style={styles.inputContainer}>
             <MaterialCommunityIcons name="email-outline" size={24} color="#9CA3AF" />
             <TextInput
@@ -95,35 +85,27 @@ const SignupScreen = () => {
             </Pressable>
           </View>
 
-          <View style={styles.inputContainer}>
-            <MaterialCommunityIcons name="lock-outline" size={24} color="#9CA3AF" />
-            <TextInput
-              style={styles.input}
-              placeholder="Confirm Password"
-              placeholderTextColor="#9CA3AF"
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              secureTextEntry={!showPassword}
-            />
-          </View>
-
           <Pressable
             style={[styles.button, isLoading && styles.buttonDisabled]}
-            onPress={handleSignup}
+            onPress={handleLogin}
             disabled={isLoading}
           >
             {isLoading ? (
               <ActivityIndicator color="#FFFFFF" />
             ) : (
-              <Text style={styles.buttonText}>Create Account</Text>
+              <Text style={styles.buttonText}>Log In</Text>
             )}
           </Pressable>
 
-          <Link href="/login" asChild>
-            <Pressable style={styles.secondaryButton}>
-              <Text style={styles.secondaryButtonText}>
-                Already have an account? Log In
-              </Text>
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>OR</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          <Link href="/(auth)/Signup" asChild> 
+          <Pressable style={styles.secondaryButton}>
+              <Text style={styles.secondaryButtonText}>Create Account</Text>
             </Pressable>
           </Link>
         </View>
@@ -191,6 +173,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 24,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#374151',
+  },
+  dividerText: {
+    color: '#9CA3AF',
+    paddingHorizontal: 16,
+  },
   secondaryButton: {
     height: 56,
     justifyContent: 'center',
@@ -203,4 +199,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default SignupScreen;
+export default LoginScreen;
