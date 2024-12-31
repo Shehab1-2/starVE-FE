@@ -11,8 +11,8 @@ import {
   Modal,
   TextInput,
 } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons'; // Add this import
-
+import { MaterialCommunityIcons } from '@expo/vector-icons'; 
+import { useRouter } from 'expo-router';
 
 
 const { width, height } = Dimensions.get('window');
@@ -48,6 +48,9 @@ const FastingTracker = () => {
   const [currentMetabolicState, setCurrentMetabolicState] = useState(METABOLIC_STATES[0]);
   const [nextMetabolicState, setNextMetabolicState] = useState(METABOLIC_STATES[1]);
   const [timeToNextState, setTimeToNextState] = useState(0);
+
+  const router = useRouter();
+
 
   const fadeAnim = new Animated.Value(1);
   const translateY = new Animated.Value(0);
@@ -183,8 +186,15 @@ const FastingTracker = () => {
     return Math.min((timeElapsed / targetSeconds) * 100, 100);
   };
 
-  const MenuItem = ({ icon, label }) => (
-    <Pressable style={styles.menuItem}>
+  const MenuItem = ({ icon, label, route }) => (
+    <Pressable 
+      style={styles.menuItem}
+      onPress={() => {
+        router.push(route);
+        toggleMenu(); // Close menu after navigation
+      }}
+    >
+      <MaterialCommunityIcons name={icon} size={24} color="#E5E7EB" />
       <Text style={styles.menuItemText}>{label}</Text>
     </Pressable>
   );
@@ -198,6 +208,7 @@ const FastingTracker = () => {
         styles.menu,
         { transform: [{ translateX: menuSlide }] }
       ]}>
+        
         {/* Menu Content */}
         <View style={styles.menuHeader}>
           <View style={styles.profileSection}>
@@ -209,11 +220,28 @@ const FastingTracker = () => {
           </View>
         </View>
         
+        {/* Menu Items */}
         <ScrollView style={styles.menuItems}>
-          <MenuItem label="Profile" />
-          <MenuItem label="Settings" />
-          <MenuItem label="History" />
-          <MenuItem label="Statistics" />
+          <MenuItem 
+            icon="account" 
+            label="Profile" 
+            route="/(tabs)/dashboard/profile" 
+          />
+          <MenuItem 
+            icon="cog" 
+            label="Settings" 
+            route="/(tabs)/dashboard/settings" 
+          />
+          <MenuItem 
+            icon="history" 
+            label="History" 
+            route="/(tabs)/dashboard/history" 
+          />
+          <MenuItem 
+            icon="chart-bar" 
+            label="Statistics" 
+            route="/(tabs)/dashboard/statistics" 
+          />
         </ScrollView>
       </Animated.View>
 
