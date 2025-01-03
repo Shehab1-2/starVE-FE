@@ -11,20 +11,22 @@ import {
   Modal,
   TextInput,
 } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons'; 
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-
 
 const { width, height } = Dimensions.get('window');
 
+
+
+
 // Metabolic state thresholds in hours
 const METABOLIC_STATES = [
-  { name: 'Fed State', startHour: 0, endHour: 4, color: '#4ADE80' },
-  { name: 'Catabolic State', startHour: 4, endHour: 12, color: '#60A5FA' },
-  { name: 'Ketosis', startHour: 12, endHour: 18, color: '#818CF8' },
-  { name: 'Deep Ketosis', startHour: 18, endHour: 24, color: '#A78BFA' },
-  { name: 'Autophagy', startHour: 24, endHour: 72, color: '#F472B6' },
-  { name: 'Deep Autophagy', startHour: 72, endHour: 168, color: '#FB7185' },
+  { name: 'Fed State', startHour: 0, endHour: 4, color: '#4ADE80', icon: 'food' },
+  { name: 'Catabolic State', startHour: 4, endHour: 12, color: '#60A5FA', icon: 'run' },
+  { name: 'Ketosis', startHour: 12, endHour: 18, color: '#818CF8', icon: 'leaf' },
+  { name: 'Deep Ketosis', startHour: 18, endHour: 24, color: '#A78BFA', icon: 'leaf' },
+  { name: 'Autophagy', startHour: 24, endHour: 72, color: '#F472B6', icon: 'recycle' },
+  { name: 'Deep Autophagy', startHour: 72, endHour: 168, color: '#FB7185', icon: 'recycle' },
 ];
 
 const PRESET_DURATIONS = [
@@ -51,12 +53,14 @@ const FastingTracker = () => {
 
   const router = useRouter();
 
-
   const fadeAnim = new Animated.Value(1);
   const translateY = new Animated.Value(0);
   const menuSlide = useRef(new Animated.Value(-width)).current;
   const mainViewSlide = useRef(new Animated.Value(0)).current;
   const timerRef = useRef(null);
+
+  const glowAnim = useRef(new Animated.Value(0)).current;
+
 
   const toggleMenu = () => {
     const toValue = isMenuOpen ? -width : 0;
@@ -98,18 +102,35 @@ const FastingTracker = () => {
         });
       }, 1000);
 
+      // Start both animations in parallel
       Animated.loop(
-        Animated.sequence([
-          Animated.timing(translateY, {
-            toValue: -10,
-            duration: 2000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(translateY, {
-            toValue: 0,
-            duration: 2000,
-            useNativeDriver: true,
-          }),
+        Animated.parallel([
+          // Existing bounce animation
+          Animated.sequence([
+            Animated.timing(translateY, {
+              toValue: -10,
+              duration: 2000,
+              useNativeDriver: true,
+            }),
+            Animated.timing(translateY, {
+              toValue: 0,
+              duration: 2000,
+              useNativeDriver: true,
+            }),
+          ]),
+          // New glow animation
+          Animated.sequence([
+            Animated.timing(glowAnim, {
+              toValue: 1,
+              duration: 1500,
+              useNativeDriver: false,
+            }),
+            Animated.timing(glowAnim, {
+              toValue: 0,
+              duration: 1500,
+              useNativeDriver: false,
+            }),
+          ]),
         ])
       ).start();
     }
@@ -165,10 +186,10 @@ const FastingTracker = () => {
 
   const handleCustomDuration = () => {
     const hours = parseInt(customHours, 10);
-    if (hours >= 16 && hours <= 168) {
+    if (!isNaN(hours) && hours > 0) {
       startFastWithDuration(hours);
     } else {
-      alert('Please enter a duration between 16 hours and 1 week (168 hours)');
+      alert('Please enter a valid duration.');
     }
   };
 
@@ -187,7 +208,7 @@ const FastingTracker = () => {
   };
 
   const MenuItem = ({ icon, label, route }) => (
-    <Pressable 
+    <Pressable
       style={styles.menuItem}
       onPress={() => {
         router.push(route);
@@ -199,16 +220,39 @@ const FastingTracker = () => {
     </Pressable>
   );
 
+  const renderMetabolicStateIcons = () => {
+    return METABOLIC_STATES.map((state, index) => {
+      const angle = ((state.startHour + state.endHour) / 2 / 24) * 360;
+      return (
+        <View
+          key={index}
+          style={[
+            styles.stateIconContainer,
+            {
+              transform: [
+                { rotate: `${angle}deg` },
+                { translateX: 120 },
+                { rotate: `-${angle}deg` },
+              ],
+            },
+          ]}
+        >
+          <MaterialCommunityIcons name={state.icon} size={20} color={state.color} />
+        </View>
+      );
+    });
+  };
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
-      
+
       {/* Sliding Menu */}
       <Animated.View style={[
         styles.menu,
         { transform: [{ translateX: menuSlide }] }
       ]}>
-        
+
         {/* Menu Content */}
         <View style={styles.menuHeader}>
           <View style={styles.profileSection}>
@@ -219,28 +263,28 @@ const FastingTracker = () => {
             </View>
           </View>
         </View>
-        
+
         {/* Menu Items */}
         <ScrollView style={styles.menuItems}>
-          <MenuItem 
-            icon="account" 
-            label="Profile" 
-            route="/(tabs)/dashboard/profile" 
+          <MenuItem
+            icon="account"
+            label="Profile"
+            route="/(tabs)/dashboard/profile"
           />
-          <MenuItem 
-            icon="cog" 
-            label="Settings" 
-            route="/(tabs)/dashboard/settings" 
+          <MenuItem
+            icon="cog"
+            label="Settings"
+            route="/(tabs)/dashboard/settings"
           />
-          <MenuItem 
-            icon="history" 
-            label="History" 
-            route="/(tabs)/dashboard/history" 
+          <MenuItem
+            icon="history"
+            label="History"
+            route="/(tabs)/dashboard/history"
           />
-          <MenuItem 
-            icon="chart-bar" 
-            label="Statistics" 
-            route="/(tabs)/dashboard/statistics" 
+          <MenuItem
+            icon="chart-bar"
+            label="Statistics"
+            route="/(tabs)/dashboard/statistics"
           />
         </ScrollView>
       </Animated.View>
@@ -260,7 +304,7 @@ const FastingTracker = () => {
         <View style={styles.timerContainer}>
           <Text style={styles.timerText}>{formatTime(timeElapsed)}</Text>
           <Text style={styles.targetDurationText}>Target: {targetHours} hours</Text>
-          
+
           {isFasting && (
             <View style={styles.metabolicStateContainer}>
               <View style={[styles.stateIndicator, { backgroundColor: currentMetabolicState.color }]}>
@@ -271,18 +315,32 @@ const FastingTracker = () => {
               </Text>
             </View>
           )}
-          
+
           {/* Progress Circle */}
-          <View style={styles.progressContainer}>
-            <View style={styles.progressBackground} />
-            <View style={[
-              styles.progressForeground,
-              {
-                transform: [{ rotate: `${getProgress() * 3.6}deg` }]
-              }
-            ]} />
-            <Text style={styles.progressText}>{Math.round(getProgress())}%</Text>
-          </View>
+<View style={styles.progressContainer}>
+  <Animated.View
+    style={[
+      styles.glowContainer,
+      {
+        shadowOpacity: glowAnim,
+        shadowColor: currentMetabolicState.color,
+      },
+    ]}
+  >
+    <View style={styles.progressBackground} />
+    <View
+      style={[
+        styles.progressForeground,
+        {
+          borderColor: currentMetabolicState.color,
+          transform: [{ rotate: `${getProgress() * 3.6}deg` }],
+        },
+      ]}
+    />
+  </Animated.View>
+  <Text style={styles.progressText}>{Math.round(getProgress())}%</Text>
+  {renderMetabolicStateIcons()}
+</View>
         </View>
 
         {/* Bottom Controls */}
@@ -302,7 +360,7 @@ const FastingTracker = () => {
               <Text style={styles.buttonText}>End Fast</Text>
             </Pressable>
           )}
-          
+
           {/* Quick Stats */}
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
@@ -325,10 +383,10 @@ const FastingTracker = () => {
       <Modal
         visible={isDurationModalVisible}
         transparent={true}
-        animationType="slide"
+        animationType="fade"
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <Animated.View style={[styles.modalContent, { opacity: fadeAnim }]}>
             <Text style={styles.modalTitle}>Select Fasting Duration</Text>
             <ScrollView style={styles.presetContainer}>
               {PRESET_DURATIONS.map((duration, index) => (
@@ -340,7 +398,7 @@ const FastingTracker = () => {
                   <Text style={styles.presetButtonText}>{duration.label}</Text>
                 </Pressable>
               ))}
-              
+
               <View style={styles.customDurationContainer}>
                 <Text style={styles.customDurationLabel}>Custom Duration (hours)</Text>
                 <View style={styles.customInputRow}>
@@ -349,7 +407,7 @@ const FastingTracker = () => {
                     keyboardType="numeric"
                     value={customHours}
                     onChangeText={setCustomHours}
-                    placeholder="16-168"
+                    placeholder="Enter hours"
                     placeholderTextColor="#9CA3AF"
                   />
                   <Pressable
@@ -361,20 +419,19 @@ const FastingTracker = () => {
                 </View>
               </View>
             </ScrollView>
-            
+
             <Pressable
               style={styles.closeModalButton}
               onPress={() => setIsDurationModalVisible(false)}
             >
               <Text style={styles.closeModalButtonText}>Cancel</Text>
             </Pressable>
-          </View>
+          </Animated.View>
         </View>
       </Modal>
     </View>
   );
 }
-
 
 const styles = StyleSheet.create({
   container: {
@@ -506,6 +563,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFFFFF',
   },
+  stateIconContainer: {
+    position: 'absolute',
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   bottomContainer: {
     padding: 20,
     paddingBottom: 40,
@@ -614,6 +678,38 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center',
     fontWeight: '500',
+  },
+  glowContainer: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 140,
+    position: 'absolute',
+    shadowColor: '#3B82F6',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 20,
+    elevation: 5,
+  },
+  progressBackground: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    borderRadius: 140,
+    borderWidth: 3,
+    borderColor: '#374151',
+    backgroundColor: '#111827',
+  },
+  progressForeground: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    borderRadius: 140,
+    borderWidth: 3,
+    borderColor: '#3B82F6',
+    borderRightColor: 'transparent',
+    borderBottomColor: 'transparent',
+    borderLeftColor: 'transparent',
+    backgroundColor: 'transparent',
   },
 });
 
