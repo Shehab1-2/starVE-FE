@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -9,32 +9,46 @@ import {
   Platform,
   ActivityIndicator,
   ScrollView,
-} from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Link, useRouter } from 'expo-router';
+} from "react-native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { Link, useRouter } from "expo-router";
+import axios from "axios"; // Import Axios for API calls
+import AsyncStorage from "@react-native-async-storage/async-storage"; // Import AsyncStorage to store JWT
+
+const API_URL = "http://127.0.0.1:8000"; // Use your FastAPI backend URL
+// If running on an Android emulator, change to: "http://10.0.2.2:8000"
+// If using a real device, replace with your computer's local IP
 
 const LoginScreen = () => {
   const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async () => {
     setIsLoading(true);
     try {
-      const testEmail = 'test';
-      const testPassword = 'test';
+      console.log("Attempting to login with:", email, password);
 
-      if (email === testEmail && password === testPassword) {
-        await new Promise((resolve) => setTimeout(resolve, 1500)); // Simulated delay
-        router.replace('/(tabs)/dashboard'); // Navigate to the app screen
+      const response = await axios.post(`${API_URL}/auth/login`, {
+        email,
+        password,
+      });
+
+      if (response.data.token) {
+        // Store JWT token securely
+        await AsyncStorage.setItem("authToken", response.data.token);
+        console.log("Login successful, token stored!");
+
+        // Navigate to the main app screen
+        router.replace("/(tabs)/dashboard");
       } else {
-        alert('Invalid email or password. Please try again.');
+        alert("Login failed. No token received.");
       }
     } catch (error) {
-      console.error('Login error:', error);
-      alert('Login failed. Please try again.');
+      console.error("Login error:", error);
+      alert(error?.response?.data?.detail || "Login failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -42,7 +56,7 @@ const LoginScreen = () => {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={styles.container}
     >
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -78,7 +92,7 @@ const LoginScreen = () => {
             />
             <Pressable onPress={() => setShowPassword(!showPassword)}>
               <MaterialCommunityIcons
-                name={showPassword ? 'eye-off' : 'eye'}
+                name={showPassword ? "eye-off" : "eye"}
                 size={24}
                 color="#9CA3AF"
               />
@@ -103,8 +117,8 @@ const LoginScreen = () => {
             <View style={styles.dividerLine} />
           </View>
 
-          <Link href="/(auth)/Signup" asChild> 
-          <Pressable style={styles.secondaryButton}>
+          <Link href="/(auth)/Signup" asChild>
+            <Pressable style={styles.secondaryButton}>
               <Text style={styles.secondaryButtonText}>Create Account</Text>
             </Pressable>
           </Link>
@@ -117,35 +131,35 @@ const LoginScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#111827',
+    backgroundColor: "#111827",
   },
   scrollContent: {
     flexGrow: 1,
     paddingBottom: 40,
   },
   header: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingTop: 60,
     paddingBottom: 40,
   },
   title: {
     fontSize: 32,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+    fontWeight: "bold",
+    color: "#FFFFFF",
     marginTop: 20,
   },
   subtitle: {
     fontSize: 16,
-    color: '#9CA3AF',
+    color: "#9CA3AF",
     marginTop: 8,
   },
   form: {
     paddingHorizontal: 24,
   },
   inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1F2937',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#1F2937",
     borderRadius: 12,
     paddingHorizontal: 16,
     marginBottom: 16,
@@ -153,49 +167,49 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 16,
     marginLeft: 12,
   },
   button: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: "#3B82F6",
     borderRadius: 12,
     height: 56,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 16,
   },
   buttonDisabled: {
     opacity: 0.7,
   },
   buttonText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginVertical: 24,
   },
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#374151',
+    backgroundColor: "#374151",
   },
   dividerText: {
-    color: '#9CA3AF',
+    color: "#9CA3AF",
     paddingHorizontal: 16,
   },
   secondaryButton: {
     height: 56,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   secondaryButtonText: {
-    color: '#3B82F6',
+    color: "#3B82F6",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });
 

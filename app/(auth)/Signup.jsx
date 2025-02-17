@@ -22,22 +22,65 @@ const SignupScreen = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSignup = async () => {
-    if (password !== confirmPassword) {
-      alert('Passwords do not match');
-      return;
+  const validateInputs = () => {
+    if (!name.trim()) {
+      Alert.alert('Error', 'Please enter your name');
+      return false;
     }
+    if (!email.trim()) {
+      Alert.alert('Error', 'Please enter your email');
+      return false;
+    }
+    if (password.length < 6) {
+      Alert.alert('Error', 'Password must be at least 6 characters long');
+      return false;
+    }
+    if (password !== confirmPassword) {
+      Alert.alert('Error', 'Passwords do not match');
+      return false;
+    }
+    return true;
+  };
 
+  const handleSignup = async () => {
+    if (!validateInputs()) return;
+  
     setIsLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500)); // Simulated delay
-      router.replace('/(tabs)/dashboard'); // Update this line
+      const response = await fetch("http://127.0.0.1:8000/auth/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: name,
+          email,
+          password,
+        }),
+      });
+  
+      if (!response.ok) {
+        throw new Error("Signup failed. Try again.");
+      }
+  
+      const userData = await response.json(); // Response includes user ID
+      console.log("User signed up:", userData);
+  
+      // Navigate to Additional Info Screen with userId
+      router.replace({
+        pathname: "/additional-info",
+        params: { userId: response.id }
+      });
+      
+  
     } catch (error) {
-      alert('Signup failed. Please try again.');
+      Alert.alert("Signup Failed", error.message || "An error occurred during signup.");
     } finally {
       setIsLoading(false);
     }
   };
+  
+
 
   return (
     <KeyboardAvoidingView
@@ -56,7 +99,7 @@ const SignupScreen = () => {
             <MaterialCommunityIcons name="account-outline" size={24} color="#9CA3AF" />
             <TextInput
               style={styles.input}
-              placeholder="Full Name"
+              placeholder="User Name"
               placeholderTextColor="#9CA3AF"
               value={name}
               onChangeText={setName}
