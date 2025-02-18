@@ -69,7 +69,7 @@ const SignupScreen = () => {
       // Navigate to Additional Info Screen with userId
       router.replace({
         pathname: "/additional-info",
-        params: { userId: response.id }
+        params: { userId: userData.id }
       });
       
   

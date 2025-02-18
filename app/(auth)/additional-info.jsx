@@ -27,10 +27,10 @@ const AdditionalInfoScreen = () => {
       Alert.alert("Error", "Please enter your fasting goal.");
       return;
     }
-
+    console.log("Additional Info Screen, userId:", userId);
     try {
       const response = await fetch(
-        `http://127.0.0.1:8000/users/${userId}/additional-info`,
+        `http://127.0.0.1:8000/auth/users/${userId}/additional-info`,
         {
           method: "POST",
           headers: {
@@ -43,6 +43,9 @@ const AdditionalInfoScreen = () => {
           }),
         }
       );
+      //console.log("Requesting URL:", url);
+      console.log("Additional Info Screen, userId:", userId);
+
 
       if (!response.ok) {
         throw new Error("Failed to update profile");
