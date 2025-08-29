@@ -35,23 +35,27 @@ A React Native mobile application for tracking intermittent fasting sessions wit
 ### Setup
 
 1. Clone the repository:
+
 ```bash
 git clone <repository-url>
 cd Fasting-Front-End
 ```
 
 2. Install dependencies:
+
 ```bash
 npm install --legacy-peer-deps
 ```
 
 3. Configure environment variables:
-Create a `.env` file in the root directory:
+   Create a `.env` file in the root directory:
+
 ```
 EXPO_PUBLIC_API_URL=http://your-backend-url:8000
 ```
 
 4. Start the development server:
+
 ```bash
 npx expo start
 ```
@@ -80,6 +84,7 @@ services/
 The app integrates with a FastAPI backend providing:
 
 ### Authentication Endpoints
+
 - `POST /auth/signup` - User registration
 - `POST /auth/login` - JWT-based authentication
 - `GET /auth/users/{user_id}` - User profile retrieval
@@ -87,6 +92,7 @@ The app integrates with a FastAPI backend providing:
 - `POST /auth/users/{user_id}/additional-info` - Profile updates
 
 ### Fasting Session Endpoints
+
 - `POST /fasting/start` - Start new fasting session
 - `POST /fasting/{session_id}/end` - End fasting session
 - `POST /fasting/{session_id}/pause` - Pause active session
@@ -95,12 +101,14 @@ The app integrates with a FastAPI backend providing:
 - `GET /fasting/sessions/{user_id}` - Get user's session history
 
 ### Analytics Endpoints
+
 - `GET /fasting/stats/{user_id}` - Detailed statistics
 - `GET /fasting/streaks/{user_id}` - Streak information
 - `GET /fasting/analytics/{user_id}` - Analytics data
 - `GET /fasting/timeline/{user_id}` - Calendar timeline data
 
 ### Goals Endpoints
+
 - `POST /goals?user_id={id}` - Create fasting goals
 - `GET /goals/{user_id}` - Get user goals
 - `PUT /goals/{goal_id}` - Update goals
@@ -109,6 +117,7 @@ The app integrates with a FastAPI backend providing:
 ## Key Components
 
 ### FastingTracker (Dashboard)
+
 - Real-time timer with metabolic state visualization
 - Preset duration selection with quick-start buttons
 - Custom duration input with validation
@@ -116,6 +125,7 @@ The app integrates with a FastAPI backend providing:
 - Progress tracking with visual indicators
 
 ### Statistics Screen
+
 - Total fasts and completion rates
 - Average duration and weekly activity
 - Streak tracking (current and best)
@@ -123,6 +133,7 @@ The app integrates with a FastAPI backend providing:
 - Weekly analytics preview
 
 ### Settings Screen
+
 - User profile management
 - Weight and height tracking
 - Goal setting and updates
@@ -139,6 +150,7 @@ The app integrates with a FastAPI backend providing:
 ## Data Format
 
 ### Fasting Session Payload
+
 ```javascript
 {
   user_id: 1,                    // Numeric user ID
@@ -149,6 +161,7 @@ The app integrates with a FastAPI backend providing:
 ```
 
 ### User Data Storage
+
 ```javascript
 {
   id: 1,                    // Numeric user ID from backend
@@ -172,11 +185,12 @@ The app integrates with a FastAPI backend providing:
 ### Testing
 
 Run the app on different platforms:
+
 ```bash
 # iOS Simulator
 npx expo start --ios
 
-# Android Emulator  
+# Android Emulator
 npx expo start --android
 
 # Web Browser
@@ -186,6 +200,7 @@ npx expo start --web
 ### Debugging
 
 Enable comprehensive logging for API requests:
+
 - All API responses are logged to console
 - JWT payload decoding is logged for debugging
 - Validation errors are displayed with detailed field information
@@ -208,7 +223,3 @@ When contributing to this project:
 3. Ensure all API integrations handle errors gracefully
 4. Maintain the dark theme UI consistency
 5. Add proper logging for debugging complex flows
-
-## License
-
-[Add your license information here]
