@@ -12,29 +12,126 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Link, useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { authAPI, userManager } from '../../services/api';
 
 const LoginScreen = () => {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async () => {
+    if (!email || !password) {
+      alert('Please enter both email and password.');
+      return;
+    }
+
     setIsLoading(true);
     try {
-      const testEmail = 'test';
-      const testPassword = 'test';
+      const loginResponse = await authAPI.login({
+        email: email,
+        password: password,
+      });
 
-      if (email === testEmail && password === testPassword) {
-        await new Promise((resolve) => setTimeout(resolve, 1500)); // Simulated delay
-        router.push('../(tabs)/dashboard'); // Navigate to the app screen
-      } else {
-        alert('Invalid email or password. Please try again.');
+      // Store user session data
+      await userManager.storeUserSession(loginResponse);
+      
+      // Debug: Log what we stored (convert to string to see full object)
+      console.log('Login response:', JSON.stringify(loginResponse, null, 2));
+      let storedUser = await userManager.getUserData();
+      console.log('Stored user data:', JSON.stringify(storedUser, null, 2));
+      
+      // If no user data was stored, fetch user profile using a different method
+      if (!storedUser || !storedUser.id) {
+        console.log('No user data stored, attempting alternative approaches...');
+        try {
+          // Method 1: Check if login response has user info at root level
+          if (loginResponse.id || loginResponse.user_id) {
+            const userData = {
+              id: loginResponse.id || loginResponse.user_id,
+              email: loginResponse.email || email,
+              username: loginResponse.username,
+              ...loginResponse
+            };
+            await AsyncStorage.setItem('user_data', JSON.stringify(userData));
+            storedUser = userData;
+            console.log('Created user data from login response:', userData);
+          } 
+          // Method 2: For JWT-only responses, decode token and fetch user profile by username
+          else if (loginResponse.access_token) {
+            console.log('JWT-only response, trying to fetch user by email...');
+            // Decode JWT to get email (inline decoding to avoid circular import)
+            const decodeJWT = (token: string) => {
+              try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                  return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+                return JSON.parse(jsonPayload);
+              } catch (error) {
+                console.error('Error decoding JWT:', error);
+                return null;
+              }
+            };
+            const jwtPayload = decodeJWT(loginResponse.access_token);
+            if (jwtPayload && jwtPayload.sub) {
+              const userEmail = jwtPayload.sub;
+              const username = userEmail.split('@')[0];
+              console.log('Decoded email from JWT:', userEmail, 'username:', username);
+              
+              try {
+                console.log('Trying to fetch user by username:', username);
+                const userProfile = await authAPI.getUserByUsername(username);
+                await AsyncStorage.setItem('user_data', JSON.stringify(userProfile));
+                storedUser = userProfile;
+                console.log('Fetched user profile by username:', userProfile);
+              } catch (usernameError) {
+                console.log('Failed to get user by username, error:', usernameError);
+                console.log('Trying to fetch user by email:', userEmail);
+                try {
+                  const userProfile = await authAPI.getUserByUsername(userEmail);
+                  await AsyncStorage.setItem('user_data', JSON.stringify(userProfile));
+                  storedUser = userProfile;
+                  console.log('Fetched user profile by email:', userProfile);
+                } catch (emailError) {
+                  console.log('Failed to get user by email, error:', emailError);
+                  console.log('User profile not found - this might be a new user or the user endpoints use different identifiers');
+                  
+                  // For now, create a temporary user object and let the backend handle the validation error
+                  const tempUserData = {
+                    id: userEmail, // Use email as temp ID - backend will reject this and we'll see the error
+                    email: userEmail,
+                    username: username,
+                    fromJWT: true,
+                    needsRealUserId: true
+                  };
+                  await AsyncStorage.setItem('user_data', JSON.stringify(tempUserData));
+                  storedUser = tempUserData;
+                  console.log('Created temporary user data (backend will likely reject):', tempUserData);
+                }
+              }
+            }
+          }
+          // Method 3: For token-only responses, we'll handle this in dashboard
+          else {
+            console.log('Token-only login - will fetch user data in dashboard');
+            // Just proceed - dashboard will handle user data fetching
+          }
+        } catch (error) {
+          console.error('Failed to get user data:', error);
+          console.log('Proceeding to dashboard - will fetch user data there');
+          // Don't block login - let dashboard handle user data fetching
+        }
       }
+      
+      // Navigate to dashboard
+      router.replace('/(tabs)/dashboard');
     } catch (error) {
       console.error('Login error:', error);
-      alert('Login failed. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Login failed. Please check your connection and try again.';
+      alert(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -54,11 +151,10 @@ const LoginScreen = () => {
 
         <View style={styles.form}>
           <View style={styles.inputContainer}>
-            <MaterialCommunityIcons name="email-outline" size={24} color="#9CA3AF" />
             <TextInput
               style={styles.input}
               placeholder="Email"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor="#8E8E93"
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
@@ -67,22 +163,14 @@ const LoginScreen = () => {
           </View>
 
           <View style={styles.inputContainer}>
-            <MaterialCommunityIcons name="lock-outline" size={24} color="#9CA3AF" />
             <TextInput
               style={styles.input}
               placeholder="Password"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor="#8E8E93"
               value={password}
               onChangeText={setPassword}
-              secureTextEntry={!showPassword}
+              secureTextEntry={true}
             />
-            <Pressable onPress={() => setShowPassword(!showPassword)}>
-              <MaterialCommunityIcons
-                name={showPassword ? 'eye-off' : 'eye'}
-                size={24}
-                color="#9CA3AF"
-              />
-            </Pressable>
           </View>
 
           <Pressable
@@ -103,7 +191,7 @@ const LoginScreen = () => {
             <View style={styles.dividerLine} />
           </View>
 
-          <Link href="/signup" asChild>
+          <Link href="/(auth)/signup" asChild>
             <Pressable style={styles.secondaryButton}>
               <Text style={styles.secondaryButtonText}>Create Account</Text>
             </Pressable>
@@ -117,7 +205,7 @@ const LoginScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#111827',
+    backgroundColor: '#000000',
   },
   scrollContent: {
     flexGrow: 1,
@@ -125,77 +213,85 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    paddingTop: 60,
-    paddingBottom: 40,
+    paddingTop: 80,
+    paddingBottom: 50,
   },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
+    fontSize: 34,
+    fontWeight: '700',
     color: '#FFFFFF',
-    marginTop: 20,
+    marginTop: 30,
+    letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#9CA3AF',
+    fontSize: 17,
+    color: '#8E8E93',
     marginTop: 8,
+    fontWeight: '400',
   },
   form: {
     paddingHorizontal: 24,
   },
   inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1F2937',
-    borderRadius: 12,
+    backgroundColor: '#1C1C1E',
+    borderRadius: 10,
+    marginBottom: 12,
+    height: 50,
+    justifyContent: 'center',
     paddingHorizontal: 16,
-    marginBottom: 16,
-    height: 56,
+    borderWidth: 0.5,
+    borderColor: '#3A3A3C',
   },
   input: {
-    flex: 1,
     color: '#FFFFFF',
-    fontSize: 16,
-    marginLeft: 12,
+    fontSize: 17,
+    fontWeight: '400',
   },
   button: {
-    backgroundColor: '#3B82F6',
-    borderRadius: 12,
-    height: 56,
+    backgroundColor: '#007AFF',
+    borderRadius: 10,
+    height: 50,
     justifyContent: 'center',
     alignItems: 'center',
+    marginTop: 20,
     marginBottom: 16,
   },
   buttonDisabled: {
-    opacity: 0.7,
+    opacity: 0.6,
   },
   buttonText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '600',
+    letterSpacing: -0.3,
   },
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 24,
+    marginVertical: 32,
   },
   dividerLine: {
     flex: 1,
-    height: 1,
-    backgroundColor: '#374151',
+    height: 0.5,
+    backgroundColor: '#3A3A3C',
   },
   dividerText: {
-    color: '#9CA3AF',
+    color: '#8E8E93',
     paddingHorizontal: 16,
+    fontSize: 15,
+    fontWeight: '400',
   },
   secondaryButton: {
-    height: 56,
+    height: 50,
     justifyContent: 'center',
     alignItems: 'center',
+    borderRadius: 10,
+    backgroundColor: '#1C1C1E',
   },
   secondaryButtonText: {
-    color: '#3B82F6',
-    fontSize: 16,
-    fontWeight: '600',
+    color: '#007AFF',
+    fontSize: 17,
+    fontWeight: '400',
   },
 });
 

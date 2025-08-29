@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Link, useRouter } from 'expo-router';
+import { authAPI } from '../../services/api';
 
 const SignupScreen = () => {
   const router = useRouter();
@@ -19,10 +20,14 @@ const SignupScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSignup = async () => {
+    if (!name || !email || !password) {
+      alert('Please fill in all fields.');
+      return;
+    }
+
     if (password !== confirmPassword) {
       alert('Passwords do not match');
       return;
@@ -30,10 +35,18 @@ const SignupScreen = () => {
 
     setIsLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500)); // Simulated delay
-      router.replace('/(tabs)'); // Navigate to the app screen
+      const signupResponse = await authAPI.signup({
+        email: email,
+        username: name,
+        password: password,
+      });
+
+      alert(`Account created successfully! Welcome ${signupResponse.username}`);
+      router.replace('/(auth)/login'); // Navigate to login to sign in
     } catch (error) {
-      alert('Signup failed. Please try again.');
+      console.error('Signup error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Signup failed. Please check your connection and try again.';
+      alert(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -53,22 +66,20 @@ const SignupScreen = () => {
 
         <View style={styles.form}>
           <View style={styles.inputContainer}>
-            <MaterialCommunityIcons name="account-outline" size={24} color="#9CA3AF" />
             <TextInput
               style={styles.input}
               placeholder="Full Name"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor="#8E8E93"
               value={name}
               onChangeText={setName}
             />
           </View>
 
           <View style={styles.inputContainer}>
-            <MaterialCommunityIcons name="email-outline" size={24} color="#9CA3AF" />
             <TextInput
               style={styles.input}
               placeholder="Email"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor="#8E8E93"
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
@@ -77,33 +88,24 @@ const SignupScreen = () => {
           </View>
 
           <View style={styles.inputContainer}>
-            <MaterialCommunityIcons name="lock-outline" size={24} color="#9CA3AF" />
             <TextInput
               style={styles.input}
               placeholder="Password"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor="#8E8E93"
               value={password}
               onChangeText={setPassword}
-              secureTextEntry={!showPassword}
+              secureTextEntry={true}
             />
-            <Pressable onPress={() => setShowPassword(!showPassword)}>
-              <MaterialCommunityIcons
-                name={showPassword ? 'eye-off' : 'eye'}
-                size={24}
-                color="#9CA3AF"
-              />
-            </Pressable>
           </View>
 
           <View style={styles.inputContainer}>
-            <MaterialCommunityIcons name="lock-outline" size={24} color="#9CA3AF" />
             <TextInput
               style={styles.input}
               placeholder="Confirm Password"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor="#8E8E93"
               value={confirmPassword}
               onChangeText={setConfirmPassword}
-              secureTextEntry={!showPassword}
+              secureTextEntry={true}
             />
           </View>
 
@@ -119,7 +121,7 @@ const SignupScreen = () => {
             )}
           </Pressable>
 
-          <Link href="/login" asChild>
+          <Link href="/(auth)/login" asChild>
             <Pressable style={styles.secondaryButton}>
               <Text style={styles.secondaryButtonText}>
                 Already have an account? Log In
@@ -135,7 +137,7 @@ const SignupScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#111827',
+    backgroundColor: '#000000',
   },
   scrollContent: {
     flexGrow: 1,
@@ -143,63 +145,69 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    paddingTop: 60,
-    paddingBottom: 40,
+    paddingTop: 80,
+    paddingBottom: 50,
   },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
+    fontSize: 34,
+    fontWeight: '700',
     color: '#FFFFFF',
-    marginTop: 20,
+    marginTop: 30,
+    letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#9CA3AF',
+    fontSize: 17,
+    color: '#8E8E93',
     marginTop: 8,
+    fontWeight: '400',
   },
   form: {
     paddingHorizontal: 24,
   },
   inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1F2937',
-    borderRadius: 12,
+    backgroundColor: '#1C1C1E',
+    borderRadius: 10,
+    marginBottom: 12,
+    height: 50,
+    justifyContent: 'center',
     paddingHorizontal: 16,
-    marginBottom: 16,
-    height: 56,
+    borderWidth: 0.5,
+    borderColor: '#3A3A3C',
   },
   input: {
-    flex: 1,
     color: '#FFFFFF',
-    fontSize: 16,
-    marginLeft: 12,
+    fontSize: 17,
+    fontWeight: '400',
   },
   button: {
-    backgroundColor: '#3B82F6',
-    borderRadius: 12,
-    height: 56,
+    backgroundColor: '#007AFF',
+    borderRadius: 10,
+    height: 50,
     justifyContent: 'center',
     alignItems: 'center',
+    marginTop: 20,
     marginBottom: 16,
   },
   buttonDisabled: {
-    opacity: 0.7,
+    opacity: 0.6,
   },
   buttonText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '600',
+    letterSpacing: -0.3,
   },
   secondaryButton: {
-    height: 56,
+    height: 50,
     justifyContent: 'center',
     alignItems: 'center',
+    borderRadius: 10,
+    backgroundColor: '#1C1C1E',
   },
   secondaryButtonText: {
-    color: '#3B82F6',
-    fontSize: 16,
-    fontWeight: '600',
+    color: '#007AFF',
+    fontSize: 17,
+    fontWeight: '400',
   },
 });
 
